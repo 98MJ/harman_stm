@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
+#include <stdio.h>
 #include "uart.h"
 /* USER CODE END Includes */
 
@@ -98,18 +99,23 @@ int main(void) {
 		/* USER CODE END WHILE */
 		static int angle = 0;
 		static bool flagState = false;
-		uint8_t strValue[6];
 		uint8_t ch;
 
-		for (int i = 0; i < 6; i++) {
-			ch = getChar();
-			strValue[i] = ch;
-		}
-		if (strncmp(strValue, "START", 5) == 0) {
-			flagState = true;
-		}
-		if (strncmp(strValue, "STOP", 4) == 0) {
-			flagState = false;
+		ch = getChar();
+		if (ch == 'S') {
+			uint8_t strValue[6] = {0, };
+			strValue[0] = 'S';
+
+			for (int i = 1; i < 6; i++) {
+				ch = getChar();
+				strValue[i] = ch;
+			}
+			if ((strncmp(strValue, "START", 5) == 0) && (strlen(strValue)==5))  {
+				flagState = true;
+			}
+			if ((strncmp(strValue, "STOP", 4) == 0) && (strlen(strValue)==4)){
+				flagState = false;
+			}
 		}
 
 		int32_t data[10];
@@ -119,7 +125,6 @@ int main(void) {
 			data[i] = sin((angle + i * 36) * 3.14 / 180) * 10000;
 		}
 		uint8_t txBuffer[42];
-		//data to txBuffer
 		txBuffer[0] = 0xaa;
 		txBuffer[1] = 0xbb;
 		memcpy(&txBuffer[2], data, 40); //8bit standard
