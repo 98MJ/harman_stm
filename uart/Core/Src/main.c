@@ -23,6 +23,8 @@
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
+#include <math.h>
 #include "uart.h"
 /* USER CODE END Includes */
 
@@ -118,12 +120,16 @@ int main(void) {
 			}
 		}
 
-		int32_t data[10];
+		int32_t data[10]; //signed integer 32bit (-2^16 ~ 2^16)
 		angle++;
 		angle %= 360;
 		for (int i = 0; i < 10; i++) {
 			data[i] = sin((angle + i * 36) * 3.14 / 180) * 10000;
 		}
+
+		// data[] = {0, 1736, 3462, 5000, 5000, 3462, 1736, 0, -1736, - 3462}
+		// 32bit * 10 => 320bit = 40byte
+
 		uint8_t txBuffer[42];
 		txBuffer[0] = 0xaa;
 		txBuffer[1] = 0xbb;
