@@ -46,7 +46,15 @@ uint8_t getChar(){
 
 void binaryTransmit(protocol_t inData){
 	uint8_t txBuffer[] = {STX, 0, 0, 0, 0, 0, 0, 0,ETX};
-	memcpy(txBuffer[1], &inData, sizeof(protocol_t)); // sizeof(protocol_t) = 6
+	//memcpy(&txBuffer[1], &inData, 6); // sizeof(protocol_t) = 6
+
+	// STX, ETX를 오인하지 않기 위해, 최상위비트를 1로 설정
+	txBuffer[1] = inData.id | 0x80;
+	txBuffer[2] = inData.command | 0x80;
+	txBuffer[3] = inData.data | 0x80;
+	txBuffer[4] = (inData.data >> 7) | 0x80;
+	txBuffer[5] = (inData.data >> 14) | 0x80;
+	txBuffer[6] = (inData.data >> 21) | 0x80;
 	for(int i = 0; i<7; i++){
 		txBuffer[7] += txBuffer[i];
 	}

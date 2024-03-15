@@ -9,7 +9,7 @@
 typedef struct{
 	uint8_t		id;
 	uint8_t		command;
-	uint8_t		data;
+	uint32_t	data;
 } protocol_t;
 
 
