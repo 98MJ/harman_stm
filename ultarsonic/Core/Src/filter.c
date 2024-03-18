@@ -28,11 +28,11 @@ uint16_t movingAvgFilter(uint16_t inData){//이동 평균 필터
 
 
 double Kalman(double measurement){
-	static double P = 1.0; 					// 추정 오차의 공분산
-	static double varP = 0.0001;			// 프로세스 변동성
-	static double R = 0.25;//pow(0.5, 2);	// 측정치 오차의 공분산
-	static double K = 1.0;					// 칼만 이득
-	static double X = 20.0;					// 현재 추정된 상태
+	static double P = 1.0; 						// 추정 오차의 공분산
+	static double varP = 0.0001;//pow(0.01, 2);	// 프로세스 변동성
+	static double R = 0.25;//pow(0.5, 2);		// 측정치 오차의 공분산
+	static double K = 1.0;						// 칼만 이득
+	static double X = 20.0;						// 현재 추정된 상태
 
 	// Kalman Simple Filter
 	P = P + varP;
