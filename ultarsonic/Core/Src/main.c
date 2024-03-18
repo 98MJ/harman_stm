@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "uart.h"
+#include "filter.h"
 #include <stdio.h>
 /* USER CODE END Includes */
 
@@ -152,7 +153,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  printf("%ld\n", getDistance()); //long
+	  uint16_t value = getDistance();
+	  printf("%d\t%d\t%d\n",value, movingAvgFilter(value), (int)Kalman((double)value));
 	  HAL_Delay(50);
     /* USER CODE END WHILE */
 
