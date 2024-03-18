@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "uart.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -72,7 +72,7 @@ uint32_t Difference = 0;
 uint8_t IsFirstCaptured = 0;
 uint8_t Distance=0;
 
-void HAL_IC_CaptureCallback(TIM_HandleTypeDef *htim){ //인터럽트 발생 시, htim에 그 값을 할당
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){ //인터럽트 발생 시, htim에 그 값을 할당
 	if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1){
 		// 상승 인터런트
 		// echo가 0->1이 되는 지점 : 거리 측정 시작
@@ -81,21 +81,21 @@ void HAL_IC_CaptureCallback(TIM_HandleTypeDef *htim){ //인터럽트 발생 시,
 			IsFirstCaptured = 1; // 하강 인터럽트로 전좐
 			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_FALLING);
 		}
-	}
-	else if(IsFirstCaptured == 1){ // 하강 인터럽트 : 거리 측정이 끝난 지점
-		// 타이머 값을 읽음 -> CNT 값을 읽어옴
-		IC_VAL2 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
-		htim->Instance->CNT = 0; // 다음번 카운트를 위해 0으로 초기화
-		if(IC_Val2 > IC_Val1) Differnce = IC_Val2 - IC_Val1;
-		else if(IC_Val1> IC_Val2) Difference = (0xffff - IC_Val1) + IC_Val2;
-		//타이머가 끝까지 간 순간, 타이머 값이 65535에서 0으로 바뀌기 떄문에 0xffff에서 IC_Val1을 빼고 Val2를 더함
-		Distance = Difference * 0.034 / 2;
-		IsFirstCaptured = 0;
+		else if(IsFirstCaptured == 1){ // 하강 인터럽트 : 거리 측정이 끝난 지점
+			// 타이머 값을 읽음 -> CNT 값을 읽어옴
+			IC_Val2 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+			htim->Instance->CNT = 0; // 다음번 카운트를 위해 0으로 초기화
+			if(IC_Val2 > IC_Val1) Difference = IC_Val2 - IC_Val1;
+			else if(IC_Val1> IC_Val2) Difference = (0xffff - IC_Val1) + IC_Val2;
+			//타이머가 끝까지 간 순간, 타이머 값이 65535에서 0으로 바뀌기 떄문에 0xffff에서 IC_Val1을 빼고 Val2를 더함
+			Distance = Difference * 0.034 / 2;
+			IsFirstCaptured = 0;
 
-		// 다음 인터럽트를 상승에서 발생하도록 설정
-		__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
-		// 인터럽트 비활성
-		__HAL_TIM_DISABLE_IT(htim, TIM_IT_CC1);
+			// 다음 인터럽트를 상승에서 발생하도록 설정
+			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
+			// 인터럽트 비활성
+			__HAL_TIM_DISABLE_IT(htim, TIM_IT_CC1);
+		}
 	}
 }
 
@@ -142,19 +142,24 @@ int main(void)
   MX_TIM10_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  initUART(&huart2);
+  HAL_TIM_Base_Start(&htim10);
+  HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  printf("%d\n", getDistance());
+	  HAL_Delay(50);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
+
 
 /**
   * @brief System Clock Configuration
@@ -335,14 +340,14 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(tirgger_GPIO_Port, tirgger_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(trigger_GPIO_Port, trigger_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : tirgger_Pin */
-  GPIO_InitStruct.Pin = tirgger_Pin;
+  /*Configure GPIO pin : trigger_Pin */
+  GPIO_InitStruct.Pin = trigger_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(tirgger_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(trigger_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
