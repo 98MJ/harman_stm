@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "uart.h"
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -70,7 +71,7 @@ uint32_t IC_Val1 = 0;
 uint32_t IC_Val2 = 0;
 uint32_t Difference = 0;
 uint8_t IsFirstCaptured = 0;
-uint8_t Distance=0;
+uint32_t Distance=0;
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){ //인터럽트 발생 시, htim에 그 값을 할당
 	if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1){
@@ -151,7 +152,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  printf("%d\n", getDistance());
+	  printf("%ld\n", getDistance()); //long
 	  HAL_Delay(50);
     /* USER CODE END WHILE */
 
