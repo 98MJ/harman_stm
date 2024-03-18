@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <math.h>
+#include <uart.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,6 +44,8 @@
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 
+UART_HandleTypeDef huart2;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -52,12 +55,15 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+int soundLUT[] = { 130, 146, 164, 174, 196, 220, 246, 261 };
+
 int countSinLed = 0;
 int countPulseLed = 0;
 int countSound = 0;
@@ -110,7 +116,9 @@ int main(void) {
 	MX_GPIO_Init();
 	MX_TIM1_Init();
 	MX_TIM3_Init();
+	MX_USART2_UART_Init();
 	/* USER CODE BEGIN 2 */
+	initUART(&huart2);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 	/* USER CODE END 2 */
@@ -131,15 +139,45 @@ int main(void) {
 			HAL_GPIO_TogglePin(Pulse_GPIO_Port, Pulse_Pin);
 		}
 		if (countSound == 0) {
-			countSound = 500;
+			countSound = 200;
 
 			// uint8_t sound[8] = { 130, 146, 164, 174, 196, 220, 246, 261 };
-			uint8_t sound[8] = { 523, 587, 659, 698, 783, 880, 987, 1046 };
+			// uint8_t sound[8] = { 523, 587, 659, 698, 783, 880, 987, 1046 };
 			// uint8_t sound[8] = {1046, 1174, 1318, 1396, 1567, 1760, 1975, 2093};
-			static int freq = 0;
-			setSound(sound[freq]);
-			freq++;
-			freq %= 7;
+			/*static int freq = 0;
+			 setSound(soundLUT[freq]);
+			 freq++;
+			 freq %= 7;*/
+
+			stopSound();
+			char ch = getChar();
+			switch (ch) {
+			case 'c':
+				setSound(soundLUT[0]);
+				break;
+			case 'd':
+				setSound(soundLUT[1]);
+				break;
+			case 'e':
+				setSound(soundLUT[2]);
+				break;
+			case 'f':
+				setSound(soundLUT[3]);
+				break;
+			case 'g':
+				setSound(soundLUT[4]);
+				break;
+			case 'a':
+				setSound(soundLUT[5]);
+				break;
+			case 'b':
+				setSound(soundLUT[6]);
+				break;
+			case 'C':
+				setSound(soundLUT[7]);
+				break;
+
+			}
 
 		}
 
@@ -321,6 +359,37 @@ static void MX_TIM3_Init(void) {
 
 	/* USER CODE END TIM3_Init 2 */
 	HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
+ * @brief USART2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_USART2_UART_Init(void) {
+
+	/* USER CODE BEGIN USART2_Init 0 */
+
+	/* USER CODE END USART2_Init 0 */
+
+	/* USER CODE BEGIN USART2_Init 1 */
+
+	/* USER CODE END USART2_Init 1 */
+	huart2.Instance = USART2;
+	huart2.Init.BaudRate = 115200;
+	huart2.Init.WordLength = UART_WORDLENGTH_8B;
+	huart2.Init.StopBits = UART_STOPBITS_1;
+	huart2.Init.Parity = UART_PARITY_NONE;
+	huart2.Init.Mode = UART_MODE_TX_RX;
+	huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+	if (HAL_UART_Init(&huart2) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN USART2_Init 2 */
+
+	/* USER CODE END USART2_Init 2 */
 
 }
 
