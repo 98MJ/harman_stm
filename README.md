@@ -1,4 +1,5 @@
-![logo](https://github.com/98MJ/harman_stm/assets/112085848/6d0cf87f-d869-4a46-9c97-cdd604312150)  harman_stm
+!!
+[교육센터 로고](https://github.com/98MJ/harman_stm/assets/112085848/416cfa44-f117-424b-84e6-3bed09f77d15) harman_stm
 
 ![header](https://capsule-render.vercel.app/api?type=waving&color=82F7F4&height=200&section=header&text=Harman%20Semiconductor%20Academy&fontSize=50)
 
