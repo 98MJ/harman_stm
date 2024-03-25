@@ -124,6 +124,18 @@ int main(void)
 	uint16_t adcValue[2];
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adcValue, 2);
 
+	I2C_CLCD_GotoXY(0, 0);
+	I2C_CLCD_PutC(0);
+	I2C_CLCD_PutC(1);
+	I2C_CLCD_PutC(2);
+	I2C_CLCD_PutC(3);
+	I2C_CLCD_GotoXY(0, 1);
+	I2C_CLCD_PutC(4);
+	I2C_CLCD_PutC(5);
+	I2C_CLCD_PutC(6);
+	I2C_CLCD_PutC(7);
+	I2C_CLCD_CG_Update();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -148,8 +160,12 @@ int main(void)
 		I2C_CLCD_Progressbar(adcValue2/51,1);
 		*/
 
-		I2C_CLCD_Progressbar(adcValue[0]/51,0); // or Using map function
-		I2C_CLCD_Progressbar(adcValue[1]/51,1);
+		/*I2C_CLCD_Progressbar(adcValue[0]/51,0); // or Using map function
+		I2C_CLCD_Progressbar(adcValue[1]/51,1);*/
+
+		I2C_CLCD_CG_ScrollLeft();
+		I2C_CLCD_CG_DrawPixel(19, 15-(adcValue[0]/273)); //4095/15 = 273
+		I2C_CLCD_CG_Update();
 		HAL_Delay(50);
 
     /* USER CODE END WHILE */

@@ -105,15 +105,65 @@ void I2C_CLCD_CustomFont() {
 	}
 }
 
-void I2C_CLCD_Progressbar(uint8_t n, uint8_t line){
+void I2C_CLCD_Progressbar(uint8_t n, uint8_t line) {
 	I2C_CLCD_GotoXY(0, line);
-	for(int i=0; i<(n/5); i++){
+	for (int i = 0; i < (n / 5); i++) {
 		I2C_CLCD_PutC(5); // 5*8이 풀로 채워진 것
 	}
 	I2C_CLCD_PutC(n % 5);
 	// ex) n이 26이면, 5*5 + 1
 
-	for(int i=(n/5)+1; i<16; i++){
+	for (int i = (n / 5) + 1; i < 16; i++) {
 		I2C_CLCD_PutC(0); // 빈칸은 0으로
+	}
+}
+/* test용 버퍼
+uint32_t CGBuffer[] = {
+		0b00000000000000000000000000000010,
+		0b00000000000000000000000000000101,
+		0b00000000000000000000000000001000,
+		0b00000000000000000000000000010000,
+		0b00000000000000000000000000100000,
+		0b00000000000000000000000001000000,
+		0b00000000000000000000000010000000,
+		0b00000000000000000000000100000000,
+		0b00000000000000000000001000000000,
+		0b00000000000000000000010000000000,
+		0b00000000000000000000100000000000,
+		0b00000000000000000001000000000000,
+		0b00000000000000000010000000000000,
+		0b00000000000000000100000000000000,
+		0b00000000000000001000000000000000,
+		0b00000000000000010000000000000000
+};
+*/
+uint32_t CGBuffer[16];
+
+void I2C_CLCD_CG_Clearbuffer() {
+	memset(CGBuffer,0,64);
+}
+
+void I2C_CLCD_CG_DrawPixel(uint8_t x, uint8_t y) {
+	CGBuffer[y] |= 1 << (19 - x);
+}
+
+void I2C_CLCD_CG_Update() {
+	I2C_CLCD_SendByte(0, 0x40);
+
+	for (int j = 0; j < 4; j++) {
+		for (int i = 0; i < 8; i++) {
+			I2C_CLCD_SendByte(1, CGBuffer[i] >> (15 - j * 5));
+		}
+	}
+	for (int j = 0; j < 4; j++) {
+		for (int i = 0; i < 8; i++) {
+			I2C_CLCD_SendByte(1, CGBuffer[i+8] >> (15 - j * 5));
+		}
+	}
+}
+
+void I2C_CLCD_CG_ScrollLeft(){
+	for (int i=0; i<16; i++){
+		CGBuffer[i] = CGBuffer[i] << 1;
 	}
 }

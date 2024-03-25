@@ -43,4 +43,8 @@ void 	I2C_CLCD_Left();
 void 	I2C_CLCD_ShiftStop();
 void 	I2C_CLCD_CustomFont();
 void 	I2C_CLCD_Progressbar(uint8_t n, uint8_t line);
+void 	I2C_CLCD_CG_Clearbuffer();
+void 	I2C_CLCD_CG_DrawPixel(uint8_t x, uint8_t y);
+void 	I2C_CLCD_CG_Update();
+void 	I2C_CLCD_CG_ScrollLeft();
 #endif /* I2C_CLCD_H_ */
