@@ -10,9 +10,9 @@
 /* Defines */
 
 #define I2C_CLCD_RS		0
-#define I2C_CLCD_RW		1
+#define I2C_CLCD_RW		1 // busy check
 #define I2C_CLCD_E		2
-#define I2C_CLCD_LED	3
+#define I2C_CLCD_LED	3 // back light 신호
 #define I2C_CLCD_D4		4
 #define I2C_CLCD_D5		5
 #define I2C_CLCD_D6		6
