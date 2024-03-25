@@ -41,4 +41,5 @@ void 	I2C_CLCD_Cursor(uint8_t on);
 void 	I2C_CLCD_Right();
 void 	I2C_CLCD_Left();
 void 	I2C_CLCD_ShiftStop();
+void 	I2C_CLCD_CustomFont();
 #endif /* I2C_CLCD_H_ */
