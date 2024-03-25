@@ -105,8 +105,8 @@ void I2C_CLCD_CustomFont() {
 	}
 }
 
-void I2C_CLCD_Progressbar(uint8_t n){
-	I2C_CLCD_GotoXY(0, 0);
+void I2C_CLCD_Progressbar(uint8_t n, uint8_t line){
+	I2C_CLCD_GotoXY(0, line);
 	for(int i=0; i<(n/5); i++){
 		I2C_CLCD_PutC(5); // 5*8이 풀로 채워진 것
 	}
