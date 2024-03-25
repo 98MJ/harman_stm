@@ -103,15 +103,16 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 	initUART(&huart2);
-	/*printf("i2c scan start\n");
+	printf("i2c scan start\n");
 	 for(int address=0; address<256; address++){ //target device detect
 	 if(HAL_I2C_IsDeviceReady(&hi2c1, address, 0, 10) == HAL_OK){ //10ms
 	 printf("%02x is ready\n", address);
-	 // detecting 0x4e, 0x4f -> 0x27 + R/W
+	 // detecting 0x4e, 0x4f (clcd) -> 0x27 + R/W
+	 // detecting 0xa0, 0xa1, 0xd0, 0xd1(eeprom)
 
 	 }
 	 }
-	 printf("i2c scan end\n"); */
+	 printf("i2c scan end\n");
 	I2C_CLCD_init();
 	I2C_CLCD_GotoXY(0, 0);
 	I2C_CLCD_PutStr("                   ");
@@ -164,8 +165,12 @@ int main(void)
 		I2C_CLCD_Progressbar(adcValue[1]/51,1);*/
 
 		I2C_CLCD_CG_ScrollLeft();
-		I2C_CLCD_CG_DrawPixel(19, 15-(adcValue[0]/273)); //4095/15 = 273
+		I2C_CLCD_CG_DrawPixel(19, 15-(adcValue[1]/273)); //4095/15 = 273
 		I2C_CLCD_CG_Update();
+		I2C_CLCD_GotoXY(5, 0);
+		char str[20];
+		sprintf(str, "%5d", adcValue[1]);
+		I2C_CLCD_PutStr(str);
 		HAL_Delay(50);
 
     /* USER CODE END WHILE */
