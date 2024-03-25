@@ -111,12 +111,20 @@ int main(void) {
 	I2C_CLCD_PutStr("                   ");
 	I2C_CLCD_GotoXY(0, 0);
 	I2C_CLCD_PutStr("Hello World");
+	I2C_CLCD_Cursor(1); // 0:off
 
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
+		static int count = 0;
+		char str[20];
+		sprintf(str, "%6d", count);
+		I2C_CLCD_GotoXY(4, 1);
+		I2C_CLCD_PutStr(str);
+		count++;
+		HAL_Delay(50);
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */

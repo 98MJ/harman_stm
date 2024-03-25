@@ -1,6 +1,6 @@
 #include "I2C_CLCD.h"
 
-extern I2C_HandleTypeDef hi2c1; // 중복 선언 재정의
+extern I2C_HandleTypeDef hi2c1; // 중복 선언 재정의 (hi2c1)
 
 void I2C_CLCD_Delay_us(uint8_t us)
 {
@@ -72,4 +72,8 @@ void I2C_CLCD_PutC(uint8_t C)
 void I2C_CLCD_PutStr(uint8_t *Str)
 {
 	while(*Str) I2C_CLCD_PutC(*Str++);
+}
+
+void I2C_CLCD_Cursor(uint8_t on){
+	I2C_CLCD_SendByte(0, 0x0c | (on<< 1));
 }
