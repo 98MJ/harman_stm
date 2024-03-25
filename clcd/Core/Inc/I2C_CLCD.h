@@ -38,5 +38,7 @@ void	I2C_CLCD_GotoXY(uint8_t X, uint8_t Y);
 void	I2C_CLCD_PutC(uint8_t C);
 void	I2C_CLCD_PutStr(uint8_t *Str);
 void 	I2C_CLCD_Cursor(uint8_t on);
-
+void 	I2C_CLCD_Right();
+void 	I2C_CLCD_Left();
+void 	I2C_CLCD_ShiftStop();
 #endif /* I2C_CLCD_H_ */

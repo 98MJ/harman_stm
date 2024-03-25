@@ -77,3 +77,13 @@ void I2C_CLCD_PutStr(uint8_t *Str)
 void I2C_CLCD_Cursor(uint8_t on){
 	I2C_CLCD_SendByte(0, 0x0c | (on<< 1));
 }
+
+void I2C_CLCD_Right(){
+	I2C_CLCD_SendByte(0, 0b00011100); // 뒤에 두 비트는 don't care
+}
+void I2C_CLCD_Left(){
+	I2C_CLCD_SendByte(0, 0b00011000);
+}
+void I2C_CLCD_ShiftStop(){
+	I2C_CLCD_SendByte(0, 0b00000100);
+}

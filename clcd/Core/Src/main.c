@@ -111,7 +111,11 @@ int main(void) {
 	I2C_CLCD_PutStr("                   ");
 	I2C_CLCD_GotoXY(0, 0);
 	I2C_CLCD_PutStr("Hello World");
-	I2C_CLCD_Cursor(1); // 0:off
+	// I2C_CLCD_Cursor(1); // 0:off
+	for(int i=0; i<12; i++){
+		I2C_CLCD_Left();
+		HAL_Delay(100);
+	}
 
 	/* USER CODE END 2 */
 
@@ -121,7 +125,8 @@ int main(void) {
 		static int count = 0;
 		char str[20];
 		sprintf(str, "%6d", count);
-		I2C_CLCD_GotoXY(4, 1);
+		I2C_CLCD_GotoXY(4+12, 1);
+		// Since the address system was also shifted outside the while(1), 12 spaces were shifted
 		I2C_CLCD_PutStr(str);
 		count++;
 		HAL_Delay(50);
