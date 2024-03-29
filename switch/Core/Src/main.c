@@ -56,7 +56,22 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+_Bool stateSwitchA;
+_Bool stateSwitchB;
 
+void SystickCallback(){
+	static uint32_t bufferSwitch[2];
+	// buffer update
+	bufferSwitch[0] = bufferSwitch[0] << 1;
+	bufferSwitch[1] = bufferSwitch[1] << 1; // LSB -> 0
+	bufferSwitch[0] |= HAL_GPIO_ReadPin(UP_GPIO_Port, UP_Pin);
+	bufferSwitch[1] |= HAL_GPIO_ReadPin(DOWN_GPIO_Port, DOWN_Pin);
+	// buffer judgement
+	if (bufferSwitch[0] == 0) stateSwitchA &= 0;
+	if (bufferSwitch[0] == 0xFFFFFFFF) stateSwitchA |= 1;
+	if (bufferSwitch[1] == 0) stateSwitchB &= 0;
+	if (bufferSwitch[1] == 0xFFFFFFFF) stateSwitchB |= 1;
+}
 /* USER CODE END 0 */
 
 /**
@@ -97,25 +112,25 @@ int main(void) {
 	while (1) {
 		static int count = 0;
 		// method 3 : edge dection
-		static int stateA, stateB, oldStateA, oldStateB;
-		stateA = HAL_GPIO_ReadPin(UP_GPIO_Port, UP_Pin);
-		stateB = HAL_GPIO_ReadPin(DOWN_GPIO_Port, DOWN_Pin);
-		if(stateA != oldStateA){
-			if(stateA == 0){ // falling edge
+		static _Bool oldStateA, oldStateB;
+		if(stateSwitchA != oldStateA){
+			if(stateSwitchA == 0){ // falling edge
 				count++;
 				printf("%d\n", count);
-			}else if(stateA == 1){ // rising edge
+			}else if(stateSwitchA == 1){ // rising edge
 
 			}
+			oldStateA = stateSwitchA;
 		}
-		if(stateB != oldStateB){ // falling edge
-			if(stateB == 0){
+		if(stateSwitchB != oldStateB){ // falling edge
+			if(stateSwitchB == 0){
 				count--;
-				printf("%d]n", count);
+				printf("%d\n", count);
 
-			}else if(stateB == 1){ // rising edge
+			}else if(stateSwitchB == 1){ // rising edge
 
 			}
+			oldStateB = stateSwitchB;
 		}
 		/* USER CODE END WHILE */
 
