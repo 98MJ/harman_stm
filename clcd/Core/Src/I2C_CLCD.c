@@ -117,9 +117,9 @@ void I2C_CLCD_Progressbar(uint8_t n, uint8_t line) {
 		I2C_CLCD_PutC(0); // 빈칸은 0으로
 	}
 }
-/* test용 버퍼
+/* test용
 uint32_t CGBuffer[] = {
-		0b00000000000000000000000000000010,
+		0b0000 0000 0000 00000 00000 00000 00001,
 		0b00000000000000000000000000000101,
 		0b00000000000000000000000000001000,
 		0b00000000000000000000000000010000,
@@ -137,33 +137,38 @@ uint32_t CGBuffer[] = {
 		0b00000000000000010000000000000000
 };
 */
-uint32_t CGBuffer[16];
+//uint32_t CGBuffer[16];
+
+uint64_t CGBuffer[] = {
+		0b0000000000000000000000000000000000000000,
+		0b0000000000000000000000000000000000000000,
+		0b0000000000000000000000000000000000000000,
+		0b0000000000000000000000000000000000000000,
+		0b0000000000000000000000000000000000000000,
+		0b0000000000000000000000000000000000000000,
+		0b0000000000000000000000000000000000000000,
+		0b0000000000000000000000000000000000000000
+};
 
 void I2C_CLCD_CG_Clearbuffer() {
-	memset(CGBuffer,0,64);
+	memset(CGBuffer,0,64*8);
 }
 
 void I2C_CLCD_CG_DrawPixel(uint8_t x, uint8_t y) {
-	CGBuffer[y] |= 1 << (19 - x);
+	CGBuffer[y] |= 1 << (39 - x);
 }
 
 void I2C_CLCD_CG_Update() {
 	I2C_CLCD_SendByte(0, 0x40);
-
-	for (int j = 0; j < 4; j++) {
-		for (int i = 0; i < 8; i++) {
-			I2C_CLCD_SendByte(1, CGBuffer[i] >> (15 - j * 5));
-		}
-	}
-	for (int j = 0; j < 4; j++) {
-		for (int i = 0; i < 8; i++) {
-			I2C_CLCD_SendByte(1, CGBuffer[i+8] >> (15 - j * 5));
+	for (int j = 0; j < 8; j++) { // 8글자 한번에
+		for (int i = 0; i < 8; i++) { // 한글자당 8줄
+			I2C_CLCD_SendByte(1, CGBuffer[i] >> (35 - j * 5));
 		}
 	}
 }
 
 void I2C_CLCD_CG_ScrollLeft(){
-	for (int i=0; i<16; i++){
+	for (int i=0; i<8; i++){
 		CGBuffer[i] = CGBuffer[i] << 1;
 	}
 }
