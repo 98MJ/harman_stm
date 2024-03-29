@@ -96,18 +96,26 @@ int main(void) {
 	/* USER CODE BEGIN WHILE */
 	while (1) {
 		static int count = 0;
-		if (HAL_GPIO_ReadPin(UP_GPIO_Port, UP_Pin) == 0) { //pull-up resistor -> push=0
-			// HAL_Delay(100); //method 1
-			// while(HAL_GPIO_ReadPin(UP_GPIO_Port, UP_Pin) == 0); // method 2
-			count++;
+		// method 3 : edge dection
+		static int stateA, stateB, oldStateA, oldStateB;
+		stateA = HAL_GPIO_ReadPin(UP_GPIO_Port, UP_Pin);
+		stateB = HAL_GPIO_ReadPin(DOWN_GPIO_Port, DOWN_Pin);
+		if(stateA != oldStateA){
+			if(stateA == 0){ // falling edge
+				count++;
+				printf("%d\n", count);
+			}else if(stateA == 1){ // rising edge
 
-			printf("%d\n", count);
-
+			}
 		}
-		if (HAL_GPIO_ReadPin(DOWN_GPIO_Port, DOWN_Pin) == 0) { //pull-up resistor -> push=0
-			count--;
-			printf("%d\n", count);
-			HAL_Delay(100);
+		if(stateB != oldStateB){ // falling edge
+			if(stateB == 0){
+				count--;
+				printf("%d]n", count);
+
+			}else if(stateB == 1){ // rising edge
+
+			}
 		}
 		/* USER CODE END WHILE */
 
