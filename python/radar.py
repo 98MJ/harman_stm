@@ -61,9 +61,6 @@ def updataScan():
                                 if obj[0] == sendingAngle:
                                     obj[1] = receiveDistance   
 
-
-
-
     canvas.delete('all') # 화면 지우기
     
     radius = WIDTH / 2
@@ -83,7 +80,7 @@ def updataScan():
         if angle == -1:
             direction = 0
 
-    canvas.after(50, updataScan)
+    canvas.after(50, updataScan) #50ms마다 updataScan 살행
 
 # 개체 호출
 root = tk.Tk()
@@ -97,6 +94,3 @@ canvas.pack()
 # 화면 표시
 updataScan()
 root.mainloop()
-
-
-
