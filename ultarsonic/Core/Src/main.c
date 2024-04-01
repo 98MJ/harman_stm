@@ -65,7 +65,7 @@ static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN 0 */
 void delayUs(uint16_t time){
 	htim10.Instance->CNT = 0;
-	while(htim10.Instance->CNT > time);
+	while(htim10.Instance->CNT < time);
 }
 
 uint32_t IC_Val1 = 0;
