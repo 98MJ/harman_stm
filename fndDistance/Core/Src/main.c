@@ -70,6 +70,19 @@ uint8_t font[] = {
 		0x7f, // 8
 		0x6f  // 9
 };
+
+uint8_t font_reverse[] = {
+		0x3f,
+		0b00110000,
+		0b01011011,
+		0b01111001,
+		0b01110100,
+		0b01011011,
+		0b01101111,
+		0b00111100,
+		0b01111111,
+		0b01111101
+};
 uint8_t digit[4] = {
 		0x06, // 1
 		0x5b, // 2
@@ -80,7 +93,7 @@ uint8_t digit[4] = {
 void SystickCallback(){
 	static int pos = 0;
 	GPIOC->ODR = 0b1111; // if don't conduct this, + GPIOB previous value
-	GPIOB->ODR = digit[pos];
+	GPIOB->ODR = digit[3-pos];
 	GPIOC->ODR = 0b1111 - (1<<pos);
 	pos++;
 	pos %= 4;
@@ -180,6 +193,7 @@ int main(void)
 	  for(int i=0; i<4; i++){ //0 : x000;
 		  digit[i] = font[str[i] - 0x30]; // ASCII code 0(0x30), 1(0x31)
 	  }*/
+	  /*
 	  digit[0] = font[count / 1000];
 	  digit[1] = font[count % 1000 / 100];
 	  digit[2] = font[count % 1000 % 100 / 10];
@@ -187,6 +201,18 @@ int main(void)
 	  count++;
 	  count %= 10000;
 	  HAL_Delay(10);
+	  */
+
+	  int dist = getDistance();
+	  /*digit[0] = font[dist / 1000];
+	  digit[1] = font[dist % 1000 / 100];
+	  digit[2] = font[dist % 1000 % 100 / 10];
+	  digit[3] = font[dist % 1000 % 100 % 10];*/
+	  digit[0] = font_reverse[dist / 1000];
+	  digit[1] = font_reverse[dist % 1000 / 100];
+	  digit[2] = font_reverse[dist % 1000 % 100 / 10];
+	  digit[3] = font_reverse[dist % 1000 % 100 % 10];
+	  HAL_Delay(100);
 
     /* USER CODE BEGIN 3 */
   }
