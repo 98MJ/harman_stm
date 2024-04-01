@@ -32,7 +32,15 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define 	RTC_ADD 	0xD0
+#define 	ROM_ADD 	0xA0
+#define		READ 		1
+#define		MagicNumber	0x12abcd78
+// 매직넘버를 랜덤하게 입력하여 EEPROM에 저장하고 이후 장치 사용시 매직넘버를 비교하여 version management
 
+//eeprom map table
+#define		eeMagicNumberBase	0
+#define		eeMagicNumberSize	4
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -70,26 +78,6 @@ uint8_t Decimal2BCD(uint8_t inData){
 	uint8_t lower = inData % 10;
 	return (upper << 4) | lower;
 }
-
-#define 	RTC_ADD 	0xD0
-#define 	ROM_ADD 	0xA0
-#define		READ 		1
-#define		MagicNumber	0x12abcd78
-// 매직넘버를 랜덤하게 입력하여 EEPROM에 저장하고 이후 장치 사용시 매직넘버를 비교하여 version management
-
-//eeprom map table
-#define		eeMagicNumberBase	0
-#define		eeMagicNumberSize	4
-
-typedef struct {
-	uint8_t year;
-	uint8_t month;
-	uint8_t date;
-	uint8_t day;
-	uint8_t hour;
-	uint8_t min;
-	uint8_t sec;
-}DateTime_t;
 
 void setRTC(DateTime_t inData){
 	uint8_t txBuffer[8];
