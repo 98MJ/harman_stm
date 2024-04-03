@@ -193,7 +193,7 @@ dht11_t dht11_read() {
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(dht11_GPIO_Port, &GPIO_InitStruct);
 	// check answer dht11
-	delayUs(40);
+	delayUs(40);  // don't care
 	if (!HAL_GPIO_ReadPin(dht11_GPIO_Port, dht11_Pin)) { // if Pin State = 0,
 		delayUs(80);
 		if (!(HAL_GPIO_ReadPin(dht11_GPIO_Port, dht11_Pin))) // timeout check

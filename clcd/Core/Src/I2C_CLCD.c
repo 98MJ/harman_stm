@@ -17,6 +17,12 @@ void I2C_CLCD_SendByte(uint8_t RS_State, uint8_t Byte) {
 		buffer[i] = (Byte & 0xf0) | (1 << I2C_CLCD_LED) | (!i << I2C_CLCD_E)
 				| (0 << I2C_CLCD_RW) | (RS_State << I2C_CLCD_RS);
 	}
+	// (Byte & 0xf0) -> buffer[i] 0으로 초기화 0000 0000
+	// 1 << I2C_CLCD_LED(3) -> 0000 1000
+	// !i << I2C_CLCD_E(2) -> buffer[0] = 0000 1100, buffer[1] = 0000 1000
+	// 0 << I2C_CLCD_RW(1) -> buffer[0] = 0000 1100
+	// RS_State << I2C_CLCD_RS -> RS_State:0(cmd),  buffer[0] = 0000 1100
+							    //RS_State:1(data), buffer[0] = 0000 1101
 
 	for (i = 0; i < 2; i++) { // buffer[2], buffer[3]
 		buffer[i + 2] = (Byte << 4) | (1 << I2C_CLCD_LED) | (!i << I2C_CLCD_E)
