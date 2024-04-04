@@ -82,6 +82,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){ //인터럽트 발생 
 			IC_Val1 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
 			IsFirstCaptured = 1; // 하강 인터럽트로 전좐
 			__HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_FALLING);
+			//__HAL_TIM_SET_CAPTUREPOLARITY 함수를 사용하여 falling edge를 감지하도록 타이머 채널의 캡처 극성 변경
 		}
 		else if(IsFirstCaptured == 1){ // 하강 인터럽트 : 거리 측정이 끝난 지점
 			// 타이머 값을 읽음 -> CNT 값을 읽어옴
