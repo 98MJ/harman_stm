@@ -38,6 +38,10 @@ void I2C_CLCD_SendByte(uint8_t RS_State, uint8_t Byte) {
 void I2C_CLCD_init(void) {
 	uint8_t i;
 	uint8_t CLCD_Init_CMD[4] = { 0x28, 0x0c, 0x01, 0x06 };
+	// 0x28 - Function Set (data:4bit, 2line, 5x8)
+	// 0x0c - Display_on
+	// 0x01 - Display_Clear
+	// 0x06 - Entry Mode Set (커서 오른쪽)
 
 	HAL_Delay(100);
 
@@ -89,6 +93,7 @@ void I2C_CLCD_ShiftStop() {
 
 void I2C_CLCD_CustomFont() {
 	I2C_CLCD_SendByte(0, 0x40); //0b0100 0000
+	// setCGRAM ADDRESS - 0b 0/1/AC5/AC4 AC3~AC0
 	/* I2C_CLCD_SendByte(0, 0x48); //0b0100 1000
 	 I2C_CLCD_SendByte(0, 0x50); //0b0101 0000 */ // 주소 자동 증가
 	for (int i = 0; i < 8; i++) {
@@ -98,7 +103,7 @@ void I2C_CLCD_CustomFont() {
 		I2C_CLCD_SendByte(1, 0b10000);
 	}
 	for (int i = 0; i < 8; i++) {
-		I2C_CLCD_SendByte(1, 0b11000);
+		I2C_CLCD_SendByte(1, 0b11000	);
 	}
 	for (int i = 0; i < 8; i++) {
 		I2C_CLCD_SendByte(1, 0b11100);
