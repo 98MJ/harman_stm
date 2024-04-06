@@ -45,7 +45,7 @@ void I2C_CLCD_init(void) {
 
 	HAL_Delay(100);
 
-	I2C_CLCD_SendByte(0, 0x02);
+	I2C_CLCD_SendByte(0, 0x02); // 0x02 - return home
 
 	HAL_Delay(2);
 
@@ -59,11 +59,12 @@ void I2C_CLCD_init(void) {
 
 void I2C_CLCD_GotoXY(uint8_t X, uint8_t Y) {
 	I2C_CLCD_SendByte(0, 0x80 | (0x40 * Y + X));
+	// set DDRAM Address 0b 1/AC6~4 AC3~0
 }
 
 void I2C_CLCD_PutC(uint8_t C) {
 	if (C == '\f') {
-		I2C_CLCD_SendByte(0, 0x01);
+		I2C_CLCD_SendByte(0, 0x01); // clear Display
 		HAL_Delay(2);
 	} else if (C == '\n') {
 		I2C_CLCD_GotoXY(0, 1);
@@ -103,7 +104,7 @@ void I2C_CLCD_CustomFont() {
 		I2C_CLCD_SendByte(1, 0b10000);
 	}
 	for (int i = 0; i < 8; i++) {
-		I2C_CLCD_SendByte(1, 0b11000	);
+		I2C_CLCD_SendByte(1, 0b11000);
 	}
 	for (int i = 0; i < 8; i++) {
 		I2C_CLCD_SendByte(1, 0b11100);
