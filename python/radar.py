@@ -12,7 +12,7 @@ objects = [[0,0],[10,0],[20,0],[30,0],[40,0],[50,0],[60,0],[70,0],[80,0],[90,0],
 ser = serial.Serial("COM7", 115200)
 
 #def btcmd():
-#    print("helow world")
+#    print("hello   x world")
 def drawObject(angle, distance):
     radius = WIDTH / 2
     x = radius + math.cos(angle * math.pi / 180) * distance
