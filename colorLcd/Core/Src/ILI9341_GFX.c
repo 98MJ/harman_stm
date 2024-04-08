@@ -259,3 +259,36 @@ void ILI9341_DrawImage(const uint8_t* image, uint8_t orientation)
 		DelayUs(1);
 	}
 }
+
+void ILI9341_DrawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color){
+	// 시작 위치 찾기
+	if(x0 > x1){ // 시작 위치가 디스플레이 상 왼쪽에 위치(x0<x1)하도록 고정
+		int16_t xtmp = x0;
+		int16_t ytmp = y0;
+		x0 = x1;
+		y0 = y1;
+		x1 = xtmp;
+		y1 = ytmp;
+	}
+	// 기울기 계산
+	int16_t deltaX = x1-x0;
+	int16_t deltaY = abs(y0-y1);
+
+	if(deltaX > deltaY){ //예각 (45도 이하) -> x값을 기준으로 y표시
+		float slope = (float)deltaX / (float)deltaY;
+		for(int i=0; i<= deltaX; i++){
+			ILI9341_DrawPixel(x0+i, y0+(i*slope), color);
+		}
+	} else { // 둔각 (45도 이상) -> y값을 기준으로 x표시
+		float slope = (float)deltaY / (float)deltaX;
+		if(y0 < y1){
+			for(int i=0; i<= deltaY; i++){
+				ILI9341_DrawPixel(x0+(i*slope), y0+i, color);
+			}
+		} else {
+			for(int i=0; i<= deltaY; i++){
+				ILI9341_DrawPixel(x0+(i*slope), y0-i, color);
+			}
+		}
+	}
+}

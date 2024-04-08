@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <math.h>
 #include "ILI9341_STM32_Driver.h"
 #include "ILI9341_GFX.h"
 /* USER CODE END Includes */
@@ -32,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define PI  3.141592
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -44,6 +45,8 @@
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
 
+TIM_HandleTypeDef htim3;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -53,13 +56,39 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void ILI9341_DrawGradLine(uint16_t x, uint16_t y, uint16_t base, uint8_t gradient, uint16_t color)
+{
+    if((x >=320) || (y >=240)) return;
 
+    /*
+    uint8_t bufferX[4] = {x>>8, x, (x+1)>>8, (x+1)};
+   uint8_t bufferY[4] = {y>>8, y, (y+1)>>8, (y+1)};
+   uint8_t bufferC[2] = {color>>8, color};
+    */
+
+    /*
+    ILI9341_DrawPixel(x, y, color);
+    ILI9341_DrawPixel(x+1, y+ 1*tan(gradient*(PI/180)), color);
+    ILI9341_DrawPixel(x+2, y+ 2*tan(gradient*(PI/180)), color);
+    */
+    //if((base > 90) || (base < -90)) return;
+
+    if((x+base >= 320) || y+base*tan(gradient*(PI/180)) >= 240) return;
+
+    for(int i=0; i<base; i++){
+        ILI9341_DrawPixel(x+i, y+i*tan(gradient*(PI/180)), color);
+    }
+
+
+
+}
 /* USER CODE END 0 */
 
 /**
@@ -92,20 +121,29 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_SPI1_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   ILI9341_Init();
-  ILI9341_SetRotation(SCREEN_HORIZONTAL_1);
+  //ILI9341_SetRotation(SCREEN_HORIZONTAL_1);
   ILI9341_FillScreen(WHITE);
-  ILI9341_DrawText("Hello world", FONT4, 10, 100, BLACK, WHITE);
-  HAL_Delay(2000);
-  ILI9341_FillScreen(WHITE);
+  //ILI9341_DrawText("Hello world", FONT4, 10, 100, BLACK, WHITE);
+  //HAL_Delay(2000);
+  //ILI9341_FillScreen(WHITE);
+  for (int i=0; i<5; i++) 	ILI9341_DrawLine(0, i, 319, i, RED);
+  for (int i=0; i<5; i++)  	ILI9341_DrawLine(0, i+5, 319, i+5, 0xfc60);
+  for (int i=0; i<5; i++)  	ILI9341_DrawLine(0, i+10, 319, i+10, 0xffe0);
+  for (int i=0; i<5; i++)  	ILI9341_DrawLine(0, i+15, 319, i+15, 0x07e0);
+  for (int i=0; i<5; i++)  	ILI9341_DrawLine(0, i+20, 319, i+20, 0x001f);
+  for (int i=0; i<5; i++)  	ILI9341_DrawLine(0, i+25, 319, i+25, 0x781f);
+  for (int i=0; i<5; i++)	ILI9341_DrawLine(0, i+30, 319, i+30, 0xf81f);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  for(int i=0; i<10; i++){
+	  /*for(int i=0; i<10; i++){
 		  char BufferText[40];
 		  sprintf(BufferText, "Counting: %d", i);
 		  ILI9341_DrawText(BufferText, FONT3, 10, 10, BLACK, WHITE);
@@ -115,9 +153,29 @@ int main(void)
 		  ILI9341_DrawText(BufferText, FONT3, 10, 90, BLUE, BLACK);
 		  ILI9341_DrawText(BufferText, FONT3, 10, 110, RED, BLACK);
 		  ILI9341_DrawText(BufferText, FONT3, 10, 130, GREEN, BLACK);
-	  }
+	  } */
 	  // rainbow line
-	  // 기울기를 구해
+	  /*for(int i=0; i<20; i++){
+		  ILI9341_DrawHLine(10, 10+i, 300, RED);
+		  ILI9341_DrawHLine(10, 30+i, 300, ORANGE);
+		  ILI9341_DrawHLine(10, 50+i, 300, YELLOW);
+		  ILI9341_DrawHLine(10, 70+i, 300, GREEN);
+		  ILI9341_DrawHLine(10, 90+i, 300, BLUE);
+		  ILI9341_DrawHLine(10, 110+i, 300, NAVY);
+		  ILI9341_DrawHLine(10, 130+i, 300, PURPLE);
+	  }*/
+	  /*
+	  for(int i=0; i<20; i++){
+		  ILI9341_DrawGradLine(10+i, 50, 100, 30, RED);
+	  }*/
+	  ILI9341_DrawLine(0, 50, 319, 150, RED);
+
+	  ILI9341_DrawLine(10, 10, 110, 110, RED);
+	  ILI9341_DrawLine(50, 10, 150, 110, RED);
+
+	  ILI9341_DrawGradLine(10, 20, 100, 45, GREEN);
+	  //ILI9341_DrawLine(0, 5, 319, 5, RED);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -206,6 +264,55 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_Encoder_InitTypeDef sConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 0;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 100;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC1Filter = 0;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC2Filter = 0;
+  if (HAL_TIM_Encoder_Init(&htim3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
 
 }
 

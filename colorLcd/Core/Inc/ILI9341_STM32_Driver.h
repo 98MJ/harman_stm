@@ -18,6 +18,7 @@ extern SPI_HandleTypeDef hspi1;
 #define	LCD_RST_PIN				GPIO_PIN_3
 
 #define BURST_MAX_SIZE 			500
+// RGB565
 #define BLACK      				0x0000
 #define NAVY        			0x000F
 #define DARKGREEN   			0x03E0
@@ -27,10 +28,10 @@ extern SPI_HandleTypeDef hspi1;
 #define OLIVE       			0x7BE0
 #define LIGHTGREY   			0xC618
 #define DARKGREY    			0x7BEF
-#define BLUE        			0x001F
-#define GREEN       			0x07E0
+#define BLUE        			0x001F // 0b 00000 000000 11111
+#define GREEN       			0x07E0 // 0b 00000 111111 00000
 #define CYAN        			0x07FF
-#define RED         			0xF800
+#define RED         			0xF800 // 0b 11111 000000 00000
 #define MAGENTA     			0xF81F
 #define YELLOW      			0xFFE0
 #define WHITE       			0xFFFF
