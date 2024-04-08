@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <math.h>
+#include "arm_math.h"
 #include "ILI9341_STM32_Driver.h"
 #include "ILI9341_GFX.h"
 /* USER CODE END Includes */
@@ -53,6 +54,13 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 
 /* USER CODE BEGIN PV */
+/*float32_t FFT_Input_Q15_f[50];
+float32_t aFFT_Input_Q15[50];*/
+#define SampleFFT	512
+uint16_t adcValue[SampleFFT];
+uint16_t doConvert = 512;
+float32_t input[SampleFFT];
+float32_t output[SampleFFT/2];
 
 /* USER CODE END PV */
 
@@ -71,6 +79,13 @@ static void MX_TIM2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+   if(htim == &htim2){
+      if(doConvert > 0) doConvert--;
+   }
+}
+
+
 void ILI9341_DrawGradLine(uint16_t x, uint16_t y, uint16_t base, uint8_t gradient, uint16_t color)
 {
     if((x >=320) || (y >=240)) return;
@@ -93,9 +108,6 @@ void ILI9341_DrawGradLine(uint16_t x, uint16_t y, uint16_t base, uint8_t gradien
     for(int i=0; i<base; i++){
         ILI9341_DrawPixel(x+i, y+i*tan(gradient*(PI/180)), color);
     }
-
-
-
 }
 /* USER CODE END 0 */
 
@@ -138,6 +150,14 @@ int main(void)
   ILI9341_Init();
   ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
   ILI9341_FillScreen(WHITE);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  HAL_TIM_Base_Start_IT(&htim2);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adcValue, 512); // 5us?�� 512번의 adc�? 진행?��?�� 배열?�� ???���?
+
+  //arm_float_to_q15((float32_t *)&FFT_Input_Q15_f[0], (q15_t *)&aFFT_Input_Q15[0], 100);
+  arm_rfft_fast_instance_f32 fftInstance;
+
+
   //ILI9341_DrawText("Hello world", FONT4, 10, 100, BLACK, WHITE);
   //HAL_Delay(2000);
   //ILI9341_FillScreen(WHITE);
@@ -149,7 +169,7 @@ int main(void)
   for (int i=0; i<5; i++)  	ILI9341_DrawLine(0, i+25, 319, i+25, 0x781f);
   for (int i=0; i<5; i++)	ILI9341_DrawLine(0, i+30, 319, i+30, 0xf81f);
   */
-  ILI9341_DrawHollowCircle(159, 119, 100, RED);
+  //ILI9341_DrawHollowCircle(159, 119, 100, RED);
 
   /* USER CODE END 2 */
 
@@ -190,20 +210,44 @@ int main(void)
 
 	  ILI9341_DrawGradLine(10, 20, 100, 45, GREEN);
 	  //ILI9341_DrawLine(0, 5, 319, 5, RED);*/
-	  static int oldX, oldY; // previous line clear
+	  /*static int oldX, oldY; // previous line clear
 	  ILI9341_DrawLine(159, 119, oldX, oldY, WHITE);
 	  int x = 159 + cos(htim3.Instance->CNT * 3.14 / 180) * 100;
 	  int y = 119 - sin(htim3.Instance->CNT * 3.14 / 180) * 100;
-	  ILI9341_DrawLine(159, 119, x, y, BLUE);
+	  ILI9341_DrawLine(159, 119, x, y, BLUE);*/
 	  /*if(htim3.Instance->CNT > 65550) htim3.Instance->CNT += 360; // underflow
 	  if(htim3.Instance->CNT > 359) htim3.Instance->CNT -= 360;*/
-	  oldX = x;
+	  /*oldX = x;
 	  oldY = y;
 
 	  char str[30];
 	  sprintf(str, "%05d", htim3.Instance->CNT);
 	  ILI9341_DrawText(str, FONT4, 50, 50, BLACK, WHITE);
-	  HAL_Delay(100);
+	  HAL_Delay(100);*/
+	  if(doConvert == 0){
+		  doConvert = SampleFFT;
+		  ILI9341_FillScreen(WHITE);
+		  /*for (int x = 0; x<319; x++){
+			  ILI9341_DrawLine(x, adcValue[x]/17,x+1,adcValue[x+1]/17, BLACK); //adcValue(12bit) / 240(lcd Height) = 17
+
+		  }
+		  HAL_Delay(100);*/
+		  for(int i=0; i<SampleFFT; i++){
+			  input[i] = (float32_t)adcValue[i/2];
+			  input[i+1] = 0;
+		  }
+		  arm_rfft_fast_init_f32(&fftInstance, SampleFFT);
+		  arm_rfft_fast_f32(&fftInstance, input, output, 0);
+
+		  for(int i=0; i<(SampleFFT/2); i++){
+			  output[i] /= 50;
+			  ILI9341_DrawLine(i, 239, i, 239-output[i], BLACK);
+		  }
+
+	  }
+	  // change frequency
+	  htim1.Instance->ARR = htim3.Instance->CNT;
+	  htim1.Instance->CCR1 = htim1.Instance->ARR/2;
 
     /* USER CODE END WHILE */
 
@@ -282,7 +326,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = DISABLE;
-  hadc1.Init.ContinuousConvMode = ENABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
   hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T2_TRGO;
@@ -489,7 +533,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 360;
+  htim3.Init.Period = 20000-1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI12;

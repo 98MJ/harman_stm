@@ -1,6 +1,6 @@
 #MicroXplorer Configuration settings - do not modify
 ADC1.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_0
-ADC1.ContinuousConvMode=ENABLE
+ADC1.ContinuousConvMode=DISABLE
 ADC1.DMAContinuousRequests=ENABLE
 ADC1.ExternalTrigConv=ADC_EXTERNALTRIGCONV_T2_TRGO
 ADC1.IPParameters=Rank-0\#ChannelRegularConversion,master,Channel-0\#ChannelRegularConversion,SamplingTime-0\#ChannelRegularConversion,NbrOfConversionFlag,DMAContinuousRequests,ContinuousConvMode,ExternalTrigConv
@@ -82,6 +82,7 @@ NVIC.PriorityGroup=NVIC_PRIORITYGROUP_4
 NVIC.SPI1_IRQn=true\:0\:0\:false\:false\:true\:true\:true\:true
 NVIC.SVCall_IRQn=true\:0\:0\:false\:false\:true\:false\:false\:false
 NVIC.SysTick_IRQn=true\:15\:0\:false\:false\:true\:false\:true\:false
+NVIC.TIM2_IRQn=true\:0\:0\:false\:false\:true\:true\:true\:true
 NVIC.UsageFault_IRQn=true\:0\:0\:false\:false\:true\:false\:false\:false
 PA0-WKUP.Signal=ADCx_IN0
 PA5.Mode=Full_Duplex_Master
@@ -200,7 +201,7 @@ TIM2.Prescaler=100-1
 TIM2.TIM_MasterOutputTrigger=TIM_TRGO_UPDATE
 TIM3.EncoderMode=TIM_ENCODERMODE_TI12
 TIM3.IPParameters=Period,EncoderMode
-TIM3.Period=360
+TIM3.Period=20000-1
 VP_SYS_VS_Systick.Mode=SysTick
 VP_SYS_VS_Systick.Signal=SYS_VS_Systick
 VP_TIM1_VS_ClockSourceINT.Mode=Internal
