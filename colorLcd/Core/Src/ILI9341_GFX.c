@@ -8,6 +8,15 @@ __STATIC_INLINE void DelayUs(volatile uint32_t us)
 	while (us--);
 }
 
+#define _swap_int16_t(a, b)                                                    \
+  {                                                                            \
+    int16_t t = a;                                                             \
+    a = b;                                                                     \
+    b = t;                                                                     \
+  }
+
+
+
 void ILI9341_DrawHollowCircle(uint16_t X, uint16_t Y, uint16_t radius, uint16_t color)
 {
 	int x = radius-1;
@@ -262,7 +271,7 @@ void ILI9341_DrawImage(const uint8_t* image, uint8_t orientation)
 
 void ILI9341_DrawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color){
 	// 시작 위치 찾기
-	if(x0 > x1){ // 시작 위치가 디스플레이 상 왼쪽에 위치(x0<x1)하도록 고정
+	/*if(x0 > x1){ // 시작 위치가 디스플레이 상 왼쪽에 위치(x0<x1)하도록 고정
 		int16_t xtmp = x0;
 		int16_t ytmp = y0;
 		x0 = x1;
@@ -290,5 +299,42 @@ void ILI9341_DrawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t c
 				ILI9341_DrawPixel(x0+(i*slope), y0-i, color);
 			}
 		}
+	}*/
+	int16_t steep = abs(y1 - y0) > abs(x1 - x0);
+	  if (steep) {
+	    _swap_int16_t(x0, y0);
+	    _swap_int16_t(x1, y1);
+	  }
+
+	  if (x0 > x1) {
+	    _swap_int16_t(x0, x1);
+	    _swap_int16_t(y0, y1);
+	  }
+
+	  int16_t dx, dy;
+	  dx = x1 - x0;
+	  dy = abs(y1 - y0);
+
+	  int16_t err = dx / 2;
+	  int16_t ystep;
+
+	  if (y0 < y1) {
+	    ystep = 1;
+	  } else {
+	    ystep = -1;
+	  }
+
+	  for (; x0 <= x1; x0++) {
+	    if (steep) {
+	    	ILI9341_DrawPixel(y0, x0, color);
+	    } else {
+	    	ILI9341_DrawPixel(x0, y0, color);
+	    }
+	    err -= dy;
+	    if (err < 0) {
+	      y0 += ystep;
+	      err += dx;
+	    }
+	  }
 	}
-}
+
