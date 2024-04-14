@@ -24,6 +24,8 @@
 #include "uart.h"
 #include "filter.h"
 #include <stdio.h>
+#include "ILI9341_STM32_Driver.h"
+#include "ILI9341_GFX.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,6 +47,7 @@
 I2C_HandleTypeDef hi2c1;
 
 SPI_HandleTypeDef hspi1;
+DMA_HandleTypeDef hdma_spi1_tx;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
@@ -61,6 +64,7 @@ UART_HandleTypeDef huart2;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM10_Init(void);
@@ -201,6 +205,241 @@ void setSound(int freq) {
 void stopSound() {
 	htim3.Instance->CCR1 = 0;
 }
+
+typedef struct ultraData {
+	uint16_t ultraCH_1;
+	uint16_t ultraCH_3;
+	uint16_t ultraCH_4;
+} ultraData_t;
+
+ultraData_t getDistance() {
+	ultraData_t dist;
+	dist.ultraCH_1 = getDistance1();
+	dist.ultraCH_3 = getDistance3();
+	dist.ultraCH_4 = getDistance4();
+
+	return dist;
+}
+
+void motorActive() {
+	HAL_GPIO_WritePin(IN1_GPIO_Port, IN1_Pin, 1);
+	HAL_GPIO_WritePin(IN2_GPIO_Port, IN2_Pin, 0);
+	htim2.Instance->CCR1 = 500;
+}
+void motorStop() {
+	htim2.Instance->CCR1 = 0;
+	HAL_GPIO_WritePin(IN1_GPIO_Port, IN1_Pin, 0);
+	HAL_GPIO_WritePin(IN2_GPIO_Port, IN2_Pin, 0);
+}
+void ledOff() {
+	HAL_GPIO_WritePin(TEST_RED_GPIO_Port, TEST_RED_Pin, 0);
+	HAL_GPIO_WritePin(TEST_GREEN_GPIO_Port, TEST_GREEN_Pin, 0);
+	HAL_GPIO_WritePin(TEST_BLUE_GPIO_Port, TEST_BLUE_Pin, 0);
+}
+void ledRedOn() {
+	HAL_GPIO_WritePin(TEST_RED_GPIO_Port, TEST_RED_Pin, 1);
+}
+void ledGreenOn() {
+	HAL_GPIO_WritePin(TEST_GREEN_GPIO_Port, TEST_GREEN_Pin, 1);
+}
+void ledBlueOn() {
+	HAL_GPIO_WritePin(TEST_BLUE_GPIO_Port, TEST_BLUE_Pin, 1);
+}
+
+uint8_t BCD2Decimal(uint8_t inData) {
+	uint8_t upper = inData >> 4;
+	uint8_t lower = inData & 0x0f;
+	return upper * 10 + lower;
+}
+
+uint8_t Decimal2BCD(uint8_t inData) {
+	uint8_t upper = inData / 10;
+	uint8_t lower = inData % 10;
+	return upper << 4 | lower;
+}
+
+#define RTC_ADD          0xD0
+#define ROM_ADD          0xA0
+#define READ               1
+#define MagicNumber      0x257fad2e      // random number
+
+// EEPROM Map Table
+#define eeMagicNumberBase      0
+#define eeMagicNumberSize      4      // 4byte
+
+typedef struct {
+	uint8_t year;
+	uint8_t month;
+	uint8_t date;
+	uint8_t day;
+	uint8_t hour;
+	uint8_t min;
+	uint8_t sec;
+} DateTime_t;
+
+void setRTC(DateTime_t inData) {
+	uint8_t txBuffer[8];
+	txBuffer[7] = Decimal2BCD(inData.year);
+	txBuffer[6] = Decimal2BCD(inData.month);
+	txBuffer[5] = Decimal2BCD(inData.date);
+	txBuffer[3] = Decimal2BCD(inData.hour);
+	txBuffer[2] = Decimal2BCD(inData.min);
+	txBuffer[1] = Decimal2BCD(inData.sec);
+	txBuffer[0] = 0;
+	HAL_I2C_Master_Transmit(&hi2c1, RTC_ADD, txBuffer, sizeof(txBuffer), 10);
+}
+
+DateTime_t getRTC() {
+	DateTime_t result;
+	uint8_t rxBuffer[7];
+	uint8_t address = 0;
+	HAL_I2C_Master_Transmit(&hi2c1, RTC_ADD, &address, 1, 10);
+	HAL_I2C_Master_Receive(&hi2c1, RTC_ADD | READ, rxBuffer, 7, 10);
+	result.year = BCD2Decimal(rxBuffer[6]);
+	result.month = BCD2Decimal(rxBuffer[5]);
+	result.date = BCD2Decimal(rxBuffer[4]);
+	result.day = BCD2Decimal(rxBuffer[3]);
+	result.hour = BCD2Decimal(rxBuffer[2]);
+	result.min = BCD2Decimal(rxBuffer[1]);
+	result.sec = BCD2Decimal(rxBuffer[0]);
+	return result;
+}
+
+// address : 0 ~ 56 (0x00 ~ 0x37)
+/*void writeRAM(uint8_t address, uint8_t data) {
+ uint8_t txBuffer[2];
+ txBuffer[0] = address - 8;
+ txBuffer[1] = data;
+ HAL_I2C_Master_Transmit(&hi2c1, RTC_ADD, txBuffer, sizeof(txBuffer), 10);
+ }
+ */
+void writeRAM(uint8_t address, uint8_t data) {
+	HAL_I2C_Mem_Write(&hi2c1, RTC_ADD, address, 1, &data, 1, 10);
+}
+/*
+ uint8_t readRAM(uint8_t address) {
+ uint8_t result;
+ uint8_t address2 = address - 8;
+ HAL_I2C_Master_Transmit(&hi2c1, RTC_ADD, &address2, 1, 10);
+ HAL_I2C_Master_Receive(&hi2c1, RTC_ADD | READ, &result, 1, 10);
+ }*/
+uint8_t readRAM(uint8_t address) {
+	uint8_t result;
+	HAL_I2C_Mem_Read(&hi2c1, RTC_ADD, address, 1, &result, 1, 10);
+	return result;
+}
+
+void writeEEPROM(uint16_t address, uint8_t data) {
+	HAL_I2C_Mem_Write(&hi2c1, ROM_ADD, address, 2, &data, 1, 10);
+	HAL_Delay(5);   // data reading delay time : 5ms
+}
+
+uint8_t readEEPROM(uint16_t address) {
+	uint8_t result;
+	HAL_I2C_Mem_Read(&hi2c1, ROM_ADD, address, 2, &result, 1, 10);
+	return result;
+}
+
+void write2ByteEEPROM(uint16_t address, uint16_t data) {
+	HAL_I2C_Mem_Write(&hi2c1, ROM_ADD, address, 2, &data, 2, 10);
+	HAL_Delay(10);
+}
+
+uint16_t read2ByteEEPROM(uint16_t address) {
+	uint16_t result;
+	HAL_I2C_Mem_Read(&hi2c1, ROM_ADD, address, 2, &result, 2, 10);
+	return result;
+}
+
+void write4ByteEEPROM(uint16_t address, uint32_t data) {
+	HAL_I2C_Mem_Write(&hi2c1, ROM_ADD, address, 2, &data, 4, 10);
+	HAL_Delay(20);
+}
+
+uint32_t read4ByteEEPROM(uint16_t address) {
+	uint32_t result;
+	HAL_I2C_Mem_Read(&hi2c1, ROM_ADD, address, 2, &result, 4, 10);
+	return result;
+}
+
+int countRTC = 0;
+int countLCD_Blink = 0;
+int countArrow = 0;
+int countMotor = 0;
+
+void SysTickCallback() {      // 1mS마다 call
+	if (countRTC > 0)
+		countRTC--;
+	if (countLCD_Blink > 0)
+		countLCD_Blink--;
+	if (countArrow > 0)
+		countArrow--;
+	if (countMotor > 0)
+		countMotor--;
+}
+void LCD_BLINK() {
+	ILI9341_FillScreen2(BLACK);
+	//if(countLCD_Blink == 0)
+	//{
+	//   countLCD_Blink = 100;
+	//}
+
+}
+
+void ILI9341_FillScreen2(uint16_t color) {
+	ILI9341_SetAddress(0, 69, LCD_WIDTH, LCD_HEIGHT);
+	ILI9341_DrawColorBurst(color, LCD_WIDTH * 251);
+}
+
+void LCD_DrawArrow(uint8_t num) {
+	switch (num) {
+	case 0:
+		ILI9341_FillScreen2(BLACK);
+		ILI9341_DrawFilledRectangleCoord(110, 280, 130, 320, GREEN);
+		for (int j = 15; j > 0; j--) {
+			ILI9341_DrawFilledRectangleCoord(90 + 2 * j, 282 - 2 * j,
+					150 - 2 * j, 280 - 2 * j, GREEN);
+			// 180-210
+		}
+		break;
+
+	case 1:
+		ILI9341_FillScreen2(BLACK);
+		ILI9341_DrawFilledRectangleCoord(110, 170, 130, 210, GREEN);
+		for (int j = 15; j > 0; j--) {
+			ILI9341_DrawFilledRectangleCoord(90 + 2 * j, 172 - 2 * j,
+					150 - 2 * j, 170 - 2 * j, GREEN);
+			// 180-210
+		}
+		break;
+	case 2:
+		ILI9341_FillScreen2(BLACK);
+		ILI9341_DrawFilledRectangleCoord(110, 100, 130, 140, GREEN);
+		for (int j = 15; j > 0; j--) {
+			ILI9341_DrawFilledRectangleCoord(90 + 2 * j, 102 - 2 * j,
+					150 - 2 * j, 100 - 2 * j, GREEN);
+			// 180-210
+		}
+		break;
+	}
+
+}
+void LCD_DrawStopSign() {
+
+	ILI9341_FillScreen2(BLACK);
+	ILI9341_DrawFilledRectangleCoord(90, 165, 150, 175, RED);
+	ILI9341_DrawHollowCircle(120, 170, 60, RED);
+	ILI9341_DrawHollowCircle(120, 170, 58, RED);
+	ILI9341_DrawHollowCircle(120, 170, 59, RED);
+	ILI9341_DrawHollowCircle(120, 170, 55, RED);
+	ILI9341_DrawHollowCircle(120, 170, 54, RED);
+	ILI9341_DrawHollowCircle(120, 170, 56, RED);
+	ILI9341_DrawHollowCircle(120, 170, 57, RED);
+
+}
+
+uint8_t motorState = 0;
+
 /* USER CODE END 0 */
 
 /**
@@ -231,6 +470,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_TIM1_Init();
   MX_USART2_UART_Init();
   MX_TIM10_Init();
@@ -248,58 +488,109 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
+	DateTime_t dateTime;
+	dateTime.year = 24;
+	dateTime.month = 4;
+	dateTime.date = 12;
+	dateTime.hour = 16;
+	dateTime.min = 43;
+	dateTime.sec = 0;
+	setRTC(dateTime);
+
+	uint8_t num = 0;
+
+	uint8_t runState = 0;
+
+	enum {
+		STOP, STANDBY, RUN1, RUN2, RUN3
+	};
+
+	//initUart(&huart2);
+
+	// set up color lcd
+	ILI9341_Init();
+	ILI9341_SetRotation(SCREEN_VERTICAL_1);
+	ILI9341_FillScreen(BLACK);
+
+	// RTC data R/T
+	uint8_t address = 0;
+	uint8_t buffer[0x40] = { 0, };
+	HAL_I2C_Master_Transmit(&hi2c1, 0xd0, &address, 1, 10);
+	HAL_I2C_Master_Receive(&hi2c1, 0xd1, buffer, 1, 10);
+	buffer[1] = buffer[0] & 0x7f;
+	buffer[0] = 0;
+	HAL_I2C_Master_Transmit(&hi2c1, 0xd0, buffer, 2, 10);
 
 	stopSound();
 	htim4.Instance->CCR1 = 600;
+	//LCD_DrawStopSign();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1) {
-		uint16_t CH_value1 = getDistance1();
-		uint16_t CH_value2 = getDistance3();
-		uint16_t CH_value3 = getDistance4();
-		printf("%d %d %d\n", CH_value1, CH_value2, CH_value3);
-		if (CH_value1 > 10 && CH_value3 < 5){
-				HAL_GPIO_WritePin(TEST_GREEN_GPIO_Port, TEST_GREEN_Pin, 1);
-				HAL_Delay(500);
-				HAL_GPIO_WritePin(TEST_GREEN_GPIO_Port, TEST_GREEN_Pin, 0);
-				HAL_GPIO_WritePin(IN1_GPIO_Port, IN1_Pin, 1);
-				HAL_GPIO_WritePin(IN2_GPIO_Port, IN2_Pin, 0);
-				htim2.Instance->CCR1 = 500;
-				htim4.Instance->CCR1 = 600;
-				stopSound();
-
-		}
-		else if (CH_value3 > 10 && CH_value1 < 3) {
-
-				HAL_GPIO_WritePin(TEST_RED_GPIO_Port, TEST_RED_Pin, 1);
-				HAL_GPIO_WritePin(IN1_GPIO_Port, IN1_Pin, 0);
-				HAL_GPIO_WritePin(IN2_GPIO_Port, IN2_Pin, 0);
-				htim4.Instance->CCR1 = 1500;
-				setSound(soundLUT[0]);
-
-				HAL_Delay(5000);
-				HAL_GPIO_WritePin(TEST_RED_GPIO_Port, TEST_RED_Pin, 0);
-		} else {
+		static uint8_t waitCount;
+		ultraData_t ultraData = getDistance();
+		//uint16_t CH_value1 = getDistance1();
+		//uint16_t CH_value2 = getDistance3();
+		//uint16_t CH_value3 = getDistance4();
+		//printf("%d %d %d\n", CH_value1, CH_value2, CH_value3);
+		printf("%d %d %d\n", ultraData.ultraCH_1, ultraData.ultraCH_3,
+				ultraData.ultraCH_4);
+		if (ultraData.ultraCH_1 > 10 && ultraData.ultraCH_3 < 5) {
+			ledGreenOn();
+			HAL_Delay(500);
+			ledOff();
 			HAL_GPIO_WritePin(IN1_GPIO_Port, IN1_Pin, 1);
 			HAL_GPIO_WritePin(IN2_GPIO_Port, IN2_Pin, 0);
 			htim2.Instance->CCR1 = 500;
 			htim4.Instance->CCR1 = 600;
 			stopSound();
+
+		} else if (ultraData.ultraCH_3 > 10 && ultraData.ultraCH_1 < 3) {
+			ledRedOn();
+			motorStop();
+			LCD_DrawStopSign();
+			htim4.Instance->CCR1 = 1500;
+			setSound(soundLUT[0]);
+			HAL_Delay(5000);
+			ledOff();
+		} else if (waitCount > 1500) {
+			ultraData = getDistance();
+			if (ultraData.ultraCH_4 > 10)
+				waitCount = 0;
+
+		} else {
+			motorActive();
+			htim4.Instance->CCR1 = 600;
+			stopSound();
+			waitCount++;
 		}
 		HAL_Delay(50);
 		/*uint16_t servovalue = 0;
-		servovalue = 600;
-		htim4.Instance->CCR1 = servovalue;
-		printf("%d\n", htim4.Instance->CCR1);
-		HAL_Delay(1000);
+		 servovalue = 600;
+		 htim4.Instance->CCR1 = servovalue;
+		 printf("%d\n", htim4.Instance->CCR1);
+		 HAL_Delay(1000);
 
-		servovalue = 1500;
-		htim4.Instance->CCR1 = servovalue;
-		printf("%d\n", htim4.Instance->CCR1);
-		HAL_Delay(1000);*/
+		 servovalue = 1500;
+		 htim4.Instance->CCR1 = servovalue;
+		 printf("%d\n", htim4.Instance->CCR1);
+		 HAL_Delay(1000);*/
+		if (countRTC == 0) {
+			countRTC = 1000;
+			dateTime = getRTC();
+			char str1[30];
+			char str2[30];
+			sprintf(str1, "%02d-%02d-%02d", dateTime.year, dateTime.month,
+					dateTime.date);
+			sprintf(str2, "%02d:%02d:%02d", dateTime.hour, dateTime.min,
+					dateTime.sec);
 
+			ILI9341_DrawText(str1, FONT4, 85, 30, WHITE, BLACK);
+			ILI9341_DrawText(str2, FONT4, 86, 50, WHITE, BLACK);
+
+		}
 
     /* USER CODE END WHILE */
 
@@ -340,7 +631,7 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
@@ -406,7 +697,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -592,7 +883,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 500-1;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -730,6 +1021,22 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -746,20 +1053,26 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1|LCD_DC_Pin|LCD_RST_Pin|IN2_Pin
-                          |IN1_Pin|TEST_GREEN_Pin|TEST_RED_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, LCD_CS_Pin|LCD_DC_Pin|LCD_RST_Pin|IN2_Pin
+                          |IN1_Pin|TEST_GREEN_Pin|TEST_RED_Pin|TEST_BLUE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(trigger_GPIO_Port, trigger_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PC1 LCD_DC_Pin LCD_RST_Pin IN2_Pin
-                           IN1_Pin TEST_GREEN_Pin TEST_RED_Pin */
-  GPIO_InitStruct.Pin = GPIO_PIN_1|LCD_DC_Pin|LCD_RST_Pin|IN2_Pin
-                          |IN1_Pin|TEST_GREEN_Pin|TEST_RED_Pin;
+  /*Configure GPIO pins : LCD_CS_Pin LCD_DC_Pin LCD_RST_Pin IN2_Pin
+                           IN1_Pin TEST_GREEN_Pin TEST_RED_Pin TEST_BLUE_Pin */
+  GPIO_InitStruct.Pin = LCD_CS_Pin|LCD_DC_Pin|LCD_RST_Pin|IN2_Pin
+                          |IN1_Pin|TEST_GREEN_Pin|TEST_RED_Pin|TEST_BLUE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : RESTART_btn_Pin EM_btn_Pin */
+  GPIO_InitStruct.Pin = RESTART_btn_Pin|EM_btn_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : trigger_Pin */
   GPIO_InitStruct.Pin = trigger_Pin;
@@ -768,12 +1081,26 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(trigger_GPIO_Port, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	if (GPIO_Pin == EM_btn_Pin) {
+		motorStop();
+		ledBlueOn();
 
+	}
+	if (GPIO_Pin == RESTART_btn_Pin) {
+		motorActive();
+		ledOff();
+	}
+}
 /* USER CODE END 4 */
 
 /**

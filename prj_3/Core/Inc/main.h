@@ -59,10 +59,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define LCD_CS_Pin GPIO_PIN_1
+#define LCD_CS_GPIO_Port GPIOC
 #define LCD_DC_Pin GPIO_PIN_2
 #define LCD_DC_GPIO_Port GPIOC
 #define LCD_RST_Pin GPIO_PIN_3
 #define LCD_RST_GPIO_Port GPIOC
+#define RESTART_btn_Pin GPIO_PIN_14
+#define RESTART_btn_GPIO_Port GPIOB
+#define RESTART_btn_EXTI_IRQn EXTI15_10_IRQn
+#define EM_btn_Pin GPIO_PIN_15
+#define EM_btn_GPIO_Port GPIOB
+#define EM_btn_EXTI_IRQn EXTI15_10_IRQn
 #define buzzer_Pin GPIO_PIN_6
 #define buzzer_GPIO_Port GPIOC
 #define IN2_Pin GPIO_PIN_8
@@ -77,11 +85,14 @@ void Error_Handler(void);
 #define TEST_GREEN_GPIO_Port GPIOC
 #define TEST_RED_Pin GPIO_PIN_11
 #define TEST_RED_GPIO_Port GPIOC
+#define TEST_BLUE_Pin GPIO_PIN_12
+#define TEST_BLUE_GPIO_Port GPIOC
 #define servo_Pin GPIO_PIN_6
 #define servo_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
-
+#define LCD_WIDTH 320
+#define LCD_HEIGHT 240
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
