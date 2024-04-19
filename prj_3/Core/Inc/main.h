@@ -65,6 +65,12 @@ void Error_Handler(void);
 #define LCD_DC_GPIO_Port GPIOC
 #define LCD_RST_Pin GPIO_PIN_3
 #define LCD_RST_GPIO_Port GPIOC
+#define STEP_1_Pin GPIO_PIN_1
+#define STEP_1_GPIO_Port GPIOA
+#define STEP_2_Pin GPIO_PIN_4
+#define STEP_2_GPIO_Port GPIOA
+#define STEP_3_Pin GPIO_PIN_0
+#define STEP_3_GPIO_Port GPIOB
 #define RESTART_btn_Pin GPIO_PIN_14
 #define RESTART_btn_GPIO_Port GPIOB
 #define RESTART_btn_EXTI_IRQn EXTI15_10_IRQn

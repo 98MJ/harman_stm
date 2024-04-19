@@ -79,6 +79,16 @@ static void MX_TIM3_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+enum STATE {
+	NORMAL, REVERSE, PASS, SLEEP, EM
+};
+enum EGDE {
+	NONE, FALLING_EDGE, RISING_EDGE
+};
+uint8_t actingflag = NORMAL;
+uint8_t reverseflag = 0;
+uint8_t restartflag = 0;
+
 void delayUs(uint16_t time) {
 	htim10.Instance->CNT = 0;
 	while (htim10.Instance->CNT < time)
@@ -367,7 +377,7 @@ int countLCD_Blink = 0;
 int countArrow = 0;
 int countMotor = 0;
 
-void SysTickCallback() {      // 1mS마다 call
+void SysTickCallback() {// 1mS마다 call
 	if (countRTC > 0)
 		countRTC--;
 	if (countLCD_Blink > 0)
@@ -388,7 +398,7 @@ void LCD_BLINK() {
 
 void ILI9341_FillScreen2(uint16_t color) {
 	ILI9341_SetAddress(0, 69, LCD_WIDTH, LCD_HEIGHT);
-	ILI9341_DrawColorBurst(color, LCD_WIDTH * 251);
+	ILI9341_DrawColorBurst(color, LCD_WIDTH *251);
 }
 
 void LCD_DrawArrow(uint8_t num) {
@@ -435,9 +445,47 @@ void LCD_DrawStopSign() {
 	ILI9341_DrawHollowCircle(120, 170, 54, RED);
 	ILI9341_DrawHollowCircle(120, 170, 56, RED);
 	ILI9341_DrawHollowCircle(120, 170, 57, RED);
+}
+
+void normalState() {
+	motorActive();
+	// 초음?�� 감�? on
+	htim4.Instance->CCR1 = 600;
+	// ??직이?�� ?��?��?��
+	stopSound();
+	ledOff();
+}
+void reverseState() {
+	ledRedOn();
+	motorStop();
+	htim4.Instance->CCR1 = 1500;
+	setSound(soundLUT[0]);
+	// 초음?�� 감�? off
+	LCD_DrawStopSign();
+}
+void passState() {
+	motorActive();
+	// 초음?�� 감�?
+	// ??직이?�� ?��?��?��
+	ledGreenOn();
+}
+void sleepState() {
+	motorStop();
+	// 초음?�� 감�? on
+	htim4.Instance->CCR1 = 600;
+	// �??????만히 ?��?�� ?��?��?��
+	ledBlueOn();
 
 }
 
+void EMState() {
+	motorStop();
+	// 초음?�� 감�? off
+	htim4.Instance->CCR1 = 1500;
+	LCD_DrawStopSign();
+	ledBlueOn();
+	ledRedOn();
+}
 uint8_t motorState = 0;
 
 /* USER CODE END 0 */
@@ -491,19 +539,15 @@ int main(void)
 	DateTime_t dateTime;
 	dateTime.year = 24;
 	dateTime.month = 4;
-	dateTime.date = 12;
-	dateTime.hour = 16;
+	dateTime.date = 18;
+	dateTime.hour = 9;
 	dateTime.min = 43;
 	dateTime.sec = 0;
 	setRTC(dateTime);
 
 	uint8_t num = 0;
 
-	uint8_t runState = 0;
 
-	enum {
-		STOP, STANDBY, RUN1, RUN2, RUN3
-	};
 
 	//initUart(&huart2);
 
@@ -523,74 +567,174 @@ int main(void)
 
 	stopSound();
 	htim4.Instance->CCR1 = 600;
+	uint8_t prevCH1, prevCH3;
+	uint8_t edge1, edge3;
+	uint8_t ch;
+	uint8_t strValue[6];
+
+
 	//LCD_DrawStopSign();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1) {
-		static uint8_t waitCount;
-		ultraData_t ultraData = getDistance();
-		//uint16_t CH_value1 = getDistance1();
-		//uint16_t CH_value2 = getDistance3();
-		//uint16_t CH_value3 = getDistance4();
-		//printf("%d %d %d\n", CH_value1, CH_value2, CH_value3);
-		printf("%d %d %d\n", ultraData.ultraCH_1, ultraData.ultraCH_3,
-				ultraData.ultraCH_4);
-		if (ultraData.ultraCH_1 > 10 && ultraData.ultraCH_3 < 5) {
-			ledGreenOn();
-			HAL_Delay(500);
-			ledOff();
-			HAL_GPIO_WritePin(IN1_GPIO_Port, IN1_Pin, 1);
-			HAL_GPIO_WritePin(IN2_GPIO_Port, IN2_Pin, 0);
-			htim2.Instance->CCR1 = 500;
-			htim4.Instance->CCR1 = 600;
-			stopSound();
-
-		} else if (ultraData.ultraCH_3 > 10 && ultraData.ultraCH_1 < 3) {
-			ledRedOn();
-			motorStop();
-			LCD_DrawStopSign();
-			htim4.Instance->CCR1 = 1500;
-			setSound(soundLUT[0]);
-			HAL_Delay(5000);
-			ledOff();
-		} else if (waitCount > 1500) {
-			ultraData = getDistance();
-			if (ultraData.ultraCH_4 > 10)
-				waitCount = 0;
-
-		} else {
-			motorActive();
-			htim4.Instance->CCR1 = 600;
-			stopSound();
-			waitCount++;
-		}
-		HAL_Delay(50);
-		/*uint16_t servovalue = 0;
-		 servovalue = 600;
-		 htim4.Instance->CCR1 = servovalue;
-		 printf("%d\n", htim4.Instance->CCR1);
-		 HAL_Delay(1000);
-
-		 servovalue = 1500;
-		 htim4.Instance->CCR1 = servovalue;
-		 printf("%d\n", htim4.Instance->CCR1);
-		 HAL_Delay(1000);*/
 		if (countRTC == 0) {
 			countRTC = 1000;
 			dateTime = getRTC();
 			char str1[30];
 			char str2[30];
-			sprintf(str1, "%02d-%02d-%02d", dateTime.year, dateTime.month,
+			sprintf(str1, "20%02d-%02d-%02d", dateTime.year, dateTime.month,
 					dateTime.date);
-			sprintf(str2, "%02d:%02d:%02d", dateTime.hour, dateTime.min,
-					dateTime.sec);
+			if(dateTime.hour > 12){
+				sprintf(str2, "PM %02d:%02d:%02d", dateTime.hour-12, dateTime.min, dateTime.sec);
+			} else
+				sprintf(str2, "AM %02d:%02d:%02d", dateTime.hour, dateTime.min, dateTime.sec);
 
-			ILI9341_DrawText(str1, FONT4, 85, 30, WHITE, BLACK);
-			ILI9341_DrawText(str2, FONT4, 86, 50, WHITE, BLACK);
+
+			ILI9341_DrawText(str1, FONT4, 80, 30, WHITE, BLACK);
+			ILI9341_DrawText(str2, FONT4, 73, 50, WHITE, BLACK);
 
 		}
+
+		ch = getChar();
+
+		static uint16_t waitCount = 0;
+		ultraData_t digitData;
+		ultraData_t ultraData;
+		uint8_t ledStep;
+
+		if(countMotor == 0){
+			countMotor = 20;
+			ultraData = getDistance();
+			if (ultraData.ultraCH_1 < 10)
+				digitData.ultraCH_1 = 1;
+			else
+				digitData.ultraCH_1 = 0;
+			if (ultraData.ultraCH_3 < 10)
+				digitData.ultraCH_3 = 1;
+			else
+				digitData.ultraCH_3 = 0;
+			if (ultraData.ultraCH_4 < 10)
+				digitData.ultraCH_4 = 1;
+			else
+				digitData.ultraCH_4 = 0;
+
+			waitCount++;
+			if((waitCount % 20) == 0){
+				ledStep++;
+			}
+			if(ledStep == 0){
+				HAL_GPIO_WritePin(STEP_3_GPIO_Port, STEP_3_Pin, 0);
+				HAL_GPIO_WritePin(STEP_1_GPIO_Port, STEP_1_Pin, 1);
+			} else if(ledStep == 1) {
+				HAL_GPIO_WritePin(STEP_1_GPIO_Port, STEP_1_Pin, 0);
+				HAL_GPIO_WritePin(STEP_2_GPIO_Port, STEP_2_Pin, 1);
+			}
+			else if(ledStep == 2) {
+				HAL_GPIO_WritePin(STEP_2_GPIO_Port, STEP_2_Pin, 0);
+				HAL_GPIO_WritePin(STEP_3_GPIO_Port, STEP_3_Pin, 1);
+			}
+			else if (ledStep > 2){
+				ledStep = 0;
+			}
+
+			if (prevCH1 != digitData.ultraCH_1) {
+				if (digitData.ultraCH_1 == 1)
+					edge1 = RISING_EDGE;
+				else
+					edge1 = FALLING_EDGE;
+			} else
+				edge1 = NONE;
+
+			if (prevCH3 != digitData.ultraCH_3) {
+				if (digitData.ultraCH_3 == 1)
+					edge3 = RISING_EDGE;
+				else
+					edge3 = FALLING_EDGE;
+			} else
+				edge3 = NONE;
+
+			prevCH1 = digitData.ultraCH_1;
+			prevCH3 = digitData.ultraCH_3;
+
+			printf("%d %d %d %d %d\n", digitData.ultraCH_1, digitData.ultraCH_3,
+					digitData.ultraCH_4, waitCount, actingflag);
+//			printf("%d %d %d\n", digitData.ultraCH_1, digitData.ultraCH_3,
+//					digitData.ultraCH_4);
+//			printf("%d,%d\n", digitData.ultraCH_1, digitData.ultraCH_3);
+		}
+
+		if(restartflag == 1){
+			actingflag = NORMAL;
+			ILI9341_FillScreen2(BLACK);
+			restartflag = 0;
+		}
+
+		if ((edge3==RISING_EDGE) && (prevCH1==0)) {
+			actingflag = PASS;
+		}
+		if (edge3==RISING_EDGE) {
+			if(prevCH1==1)
+			actingflag = REVERSE;
+		}
+
+		if (ultraData.ultraCH_4 < 5) waitCount = 0;
+		if (waitCount == 1000){
+			LCD_DrawArrow(1);
+			actingflag = SLEEP;
+		}
+		if (ch == 'p') {      // pass
+			actingflag = PASS;
+		}
+		if (ch == 'r') {    // reverse
+			actingflag = REVERSE;
+		}
+		if (ch == 'l') {     // sleep
+			LCD_DrawArrow(1);
+			actingflag = SLEEP;
+		}
+		if (ch == 'e') {     // EM
+			actingflag = EM;
+		}
+		if (ch == 'n') {    // normal
+			ILI9341_FillScreen2(BLACK);
+			actingflag = NORMAL;
+		}
+
+		if (actingflag == NORMAL) {
+			normalState();
+
+		} else if (actingflag == PASS) {
+			passState();
+			actingflag = NORMAL;
+			waitCount = 0;
+		} else if (actingflag == REVERSE) {
+			reverseState();
+			waitCount = 0;
+			HAL_Delay(3000);
+			ILI9341_FillScreen2(BLACK);
+			actingflag = NORMAL;
+		} else if (actingflag == SLEEP) {
+			sleepState();
+			waitCount = 20;
+			ultraData = getDistance();
+			if (digitData.ultraCH_4 == 1){
+				actingflag = NORMAL;
+				ILI9341_FillScreen2(BLACK);
+				waitCount = 0;
+			}
+
+		} else if (actingflag == EM) {
+			EMState();
+		}
+
+		if (actingflag == PASS && countArrow == 0) {     // pass
+			countArrow = 1000;
+			LCD_DrawArrow(num % 3);
+			num++;
+		}
+		//if(num > 3) num = 0;
 
     /* USER CODE END WHILE */
 
@@ -1057,7 +1201,10 @@ static void MX_GPIO_Init(void)
                           |IN1_Pin|TEST_GREEN_Pin|TEST_RED_Pin|TEST_BLUE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(trigger_GPIO_Port, trigger_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, STEP_1_Pin|STEP_2_Pin|trigger_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(STEP_3_GPIO_Port, STEP_3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : LCD_CS_Pin LCD_DC_Pin LCD_RST_Pin IN2_Pin
                            IN1_Pin TEST_GREEN_Pin TEST_RED_Pin TEST_BLUE_Pin */
@@ -1068,18 +1215,25 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : STEP_1_Pin STEP_2_Pin trigger_Pin */
+  GPIO_InitStruct.Pin = STEP_1_Pin|STEP_2_Pin|trigger_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : STEP_3_Pin */
+  GPIO_InitStruct.Pin = STEP_3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(STEP_3_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : RESTART_btn_Pin EM_btn_Pin */
   GPIO_InitStruct.Pin = RESTART_btn_Pin|EM_btn_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : trigger_Pin */
-  GPIO_InitStruct.Pin = trigger_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(trigger_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
@@ -1092,13 +1246,10 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == EM_btn_Pin) {
-		motorStop();
-		ledBlueOn();
-
+		actingflag = EM;
 	}
 	if (GPIO_Pin == RESTART_btn_Pin) {
-		motorActive();
-		ledOff();
+		restartflag = 1;
 	}
 }
 /* USER CODE END 4 */

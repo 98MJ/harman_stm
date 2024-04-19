@@ -148,7 +148,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
   ILI9341_Init();
-  ILI9341_SetRotation(SCREEN_HORIZONTAL_2);
+  //ILI9341_SetRotation(SCREEN_VERTICAL_2);
+  ILI9341_SetRotation(1);
   ILI9341_FillScreen(WHITE);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_Base_Start_IT(&htim2);
@@ -224,6 +225,8 @@ int main(void)
 	  sprintf(str, "%05d", htim3.Instance->CNT);
 	  ILI9341_DrawText(str, FONT4, 50, 50, BLACK, WHITE);
 	  HAL_Delay(100);*/
+
+	  /*
 	  if(doConvert == 0){
 		  doConvert = SampleFFT;
 		  ILI9341_FillScreen(WHITE);
@@ -231,7 +234,7 @@ int main(void)
 			  ILI9341_DrawLine(x, adcValue[x]/17,x+1,adcValue[x+1]/17, BLACK); //adcValue(12bit) / 240(lcd Height) = 17
 
 		  }
-		  HAL_Delay(100);*/
+		  HAL_Delay(100);*//*
 		  for(int i=0; i<SampleFFT; i++){
 			  input[i] = (float32_t)adcValue[i/2];
 			  input[i+1] = 0;
@@ -248,6 +251,20 @@ int main(void)
 	  // change frequency
 	  htim1.Instance->ARR = htim3.Instance->CNT;
 	  htim1.Instance->CCR1 = htim1.Instance->ARR/2;
+	  */
+
+	  char str[30];
+	  sprintf(str, "TIME DISPLAY");
+	  ILI9341_DrawText(str, FONT4, 10, 10, BLACK, WHITE);
+	  ILI9341_DrawGradLine(80, 119, 120, 45, GREEN);
+	  ILI9341_DrawGradLine(80, 119, 120, 135, GREEN);
+	  ILI9341_DrawLine(200, 0, 200, 79, GREEN);
+	  ILI9341_DrawLine(200, 160, 200, 239, GREEN);
+	  ILI9341_DrawLine(200, 80, 319, 80, GREEN);
+	  ILI9341_DrawLine(200, 160, 319, 160, GREEN);
+
+
+
 
     /* USER CODE END WHILE */
 

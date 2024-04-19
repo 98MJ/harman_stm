@@ -156,7 +156,7 @@ int main(void)
   {
 	  uint16_t value = getDistance();
 	  printf("%d\t%d\t%d\n",value, movingAvgFilter(value), (int)Kalman((double)value));
-	  HAL_Delay(50);
+	  HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

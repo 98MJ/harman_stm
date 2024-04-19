@@ -36,7 +36,7 @@
 #define 	ROM_ADD 	0xA0
 #define		READ 		1
 #define		MagicNumber	0x12abcd78
-// 매직넘버를 랜덤하게 입력하여 EEPROM에 저장하고 이후 장치 사용시 매직넘버를 비교하여 version management
+// 매직?��버�?? ?��?��?���? ?��?��?��?�� EEPROM?�� ???��?���? ?��?�� ?���? ?��?��?�� 매직?��버�?? 비교?��?�� version management
 
 //eeprom map table
 #define		eeMagicNumberBase	0
@@ -68,6 +68,17 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+typedef struct
+{
+   uint8_t year;
+   uint8_t month;
+   uint8_t date;
+   uint8_t day;
+   uint8_t hour;
+   uint8_t min;
+   uint8_t sec;
+} DateTime_t;
+
 uint8_t BCD2Decimal(uint8_t inData){
 	uint8_t upper = inData >> 4;;
 	uint8_t lower = inData & 0x0f;

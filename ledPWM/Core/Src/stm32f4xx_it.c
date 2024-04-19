@@ -184,12 +184,12 @@ void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
 	SysTickCallback();
-	// 1msë§ˆë‹¤ SysTick_Handler?¼?Š” ?•¨?ˆ˜?Š” ì§??†? ?œ¼ë¡? ë°œìƒ
-	// ?´ê³³ì— ?‚´ê°? ?‚¬?š©?•  ?•¨?ˆ˜ë¥? ? •?¬?•˜ë©?
+	// 1msë§ˆë‹¤ SysTick_Handler?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ï¿½??ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿½? ë°œìƒ
+	// ?ï¿½ï¿½ê³³ì— ?ï¿½ï¿½ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ ?ï¿½ï¿½?ï¿½ï¿½ï¿½? ?ï¿½ï¿½?ï¿½ï¿½?ï¿½ï¿½ï¿½?
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-
+  //HAL_SYSTICK_IRQHandler();
   /* USER CODE END SysTick_IRQn 1 */
 }
 

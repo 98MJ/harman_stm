@@ -27,7 +27,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 // UART 수신이 완료되면 HAL_UART_Receive_IT 호출
 // rxChar : 수신된 데이터
 // 수신된 데이터를 rxBuffer에 저장, Pp증가
-// 원형 버퍼
+// 원형
 
 
 uint8_t getChar(){
